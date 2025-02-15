@@ -1,7 +1,10 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import React, { useEffect ,useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { Activity, Users, AlertTriangle, Clock, TrendingUp, Zap, Leaf, Timer, Fuel, MapPin } from 'lucide-react';
+import { set } from 'mongoose';
 
 const data = [
   { name: 'Mon', optimization: 65, emergency: 12 },
@@ -73,81 +76,209 @@ const routeOptions = [
   }
 ];
 
+
+declare global {
+  interface Window {
+    MapmyIndia: any;
+    map: any;
+  }
+}
+
+
 export default function Dashboard() {
   const [selectedRoute, setSelectedRoute] = useState('');       // e
   const [showMap, setShowMap] = useState(false);      // e
   const [currentLocation, setCurrentLocation] = useState<string>("Fetching...");
   const [destination, setDestination] = useState<string>("");
   const [suggestions, setSuggestions] = useState<string[]>([]);
-  const [map, setMap] = useState<any>(null);
+  const [location, setLocation] = useState<{lat: number; lng: number} | null>(null);
+
+  // const [map, setMap] = useState<any>(null);
   const [routeData, setRouteData] = useState<any>(null);
-const apiKey = "21aec3f8c1f1cf282554c5d96095864e";
+  const apiKey = "21aec3f8c1f1cf282554c5d96095864e";
 
-useEffect(() => {
-  if ("geolocation" in navigator) {
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const { latitude, longitude } = position.coords;
-        setCurrentLocation(`${latitude},${longitude}`);
-      },
-      (error) => {
-        console.error("Error fetching location:", error);
-        setCurrentLocation("Location access denied");
-      },
-      { enableHighAccuracy: true }
-    );
-  } else {
-    setCurrentLocation("Geolocation not supported");
-  }
-}, []);
+  const [map, setMap] = useState<any>(null);
+  const [marker, setMarker] = useState<any>(null);
+  const mapplsApiKey = "b7036904-69e0-4d7c-b830-f7c6df373e58"; // Replace with your API key
 
 
+  useEffect(() => {
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          setCurrentLocation(`Lat: ${latitude}, Lng: ${longitude}`);
+          setLocation({ lat: latitude, lng: longitude });
+        },
+        (error) => {
+          console.error("Error fetching location:", error);
+          switch (error.code) {
+            case error.PERMISSION_DENIED:
+              setCurrentLocation("Location access denied.");
+              break;
+            case error.POSITION_UNAVAILABLE:
+              setCurrentLocation("Location unavailable.");
+              break;
+            case error.TIMEOUT:
+              setCurrentLocation("Location request timed out.");
+              break;
+            default:
+              setCurrentLocation("Unknown error.");
+          }
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+    } else {
+      setCurrentLocation("Geolocation not supported.");
+    }
+  }, []);
 
-useEffect(() => {
-  if (window.L && !map) {
-    const mapInstance = window.L.map("map", {
-      center: [28.6139, 77.2090],
-      zoom: 12
-    });
+console.log("lat---"+ location?.lat);
+console.log("lng---"+ location?.lng);
 
-    window.L.tileLayer(
-      "https://maps.mapmyindia.com/cdn/map_sdk?key=21aec3f8c1f1cf282554c5d96095864e",
-      { attribution: "MapMyIndia" }
-    ).addTo(mapInstance);
 
-    setMap(mapInstance);
-  }
-}, [map]);
+  // Update marker position when location changes
+  useEffect(() => {
+    if (map && marker && location) {
+      // Remove existing marker
+      marker.remove();
+      
+      // Create new marker at updated position
+      const newMarker = new window.MapmyIndia.Marker({
+        map: map,
+        position: { lat: location.lat, lng: location.lng },
+        draggable: false,
+        fitbounds: true
+      });
+      
+      // Update marker state
+      setMarker(newMarker);
+      
+      // Center map on new position
+      map.setView([location.lat, location.lng], 12);
+    }
+  }, [location, map]);
+
+  // Initialize map with proper position handling
+  useEffect(() => {
+    let mapInstance: any;
+    
+    function initializeMap() {
+      if (window.MapmyIndia && !map) {
+        // Initialize map with default or current location
+        const initialPosition = location 
+          ? [location.lat, location.lng]
+          : [28.544, 77.5454]; // Default position if location not available
+
+        mapInstance = new window.MapmyIndia.Map('map', {
+          center: initialPosition,
+          zoom: 12,
+          zoomControl: true,
+          hybrid: false
+        });
+
+        mapInstance.addListener('load', () => {
+          // Only add marker if we have location data
+          if (location) {
+            const initialMarker = new window.MapmyIndia.Marker({
+              map: mapInstance,
+              position: { lat: location.lat, lng: location.lng },
+              draggable: false,
+              fitbounds: true
+            });
+            setMarker(initialMarker);
+          }
+        });
+
+        setMap(mapInstance);
+      }
+    }
+
+    // Check if the script is already loaded
+    if (window.MapmyIndia) {
+      initializeMap();
+    } else {
+      // Load the MapMyIndia script
+      const script = document.createElement('script');
+      script.src = `https://apis.mappls.com/advancedmaps/api/${mapplsApiKey}/map_sdk?layer=vector&v=2.0`;
+      script.async = true;
+      script.defer = true;
+      script.onload = initializeMap;
+      document.head.appendChild(script);
+    }
+
+    return () => {
+      if (mapInstance) {
+        mapInstance.remove();
+      }
+    };
+  }, [location]); // Add location as dependency
+
+  // Update marker when current location changes
+  // useEffect(() => {
+  //   if (map && currentLocation !== "Fetching..." && currentLocation !== "Location access denied") {
+  //     const [lat, lng] = currentLocation.split(',').map(Number);
+      
+  //     // Remove existing marker if any
+  //     if (marker) {
+  //       marker.remove();
+  //     }
+
+  //     // Add new marker
+  //     const newMarker = new window.MapmyIndia.Marker({
+  //       map: map,
+  //       position: { lat, lng },
+  //       draggable: false,
+  //       title: "Current Location"
+  //     });
+
+  //     setMarker(newMarker);
+  //     map.setCenter([lat, lng]);
+  //   }
+  // }, [currentLocation, map]);
+
 
 
 
 const fetchAddressSuggestions = async (query: string) => {
-  if (!query) {
+  if (!query.trim()) {
     setSuggestions([]);
     return;
   }
+
   try {
     const response = await fetch(
-      `https://nominatim.openstreetmap.org/search?format=json&countrycodes=IN&viewbox=76.75,28.95,77.35,28.40&bounded=1&q=${query}`
+      `https://nominatim.openstreetmap.org/search?format=json&countrycodes=IN&q=${encodeURIComponent(query)}`
     );
     const data = await response.json();
-    setSuggestions(data.map((item: any) => item.display_name));
+    console.log(data);
+    if (Array.isArray(data) && data.length > 0) {
+      setSuggestions(data.map((item: any) => item.display_name));
+    } else {
+      setSuggestions([]);
+    }
   } catch (error) {
     console.error("Error fetching address suggestions:", error);
+    setSuggestions([]);
   }
 };
 
+console.log("suggestions---"+ suggestions);
 
 const fetchRoute = async () => {
   const API_URL = `https://apis.mapmyindia.com/advancedmaps/v1/${apiKey}/route_adv/driving/${currentLocation};${destination}`;
   try {
-    const response = await fetch(API_URL);
+    const response = await fetch(API_URL, {
+      mode: 'no-cors',
+    });
     const data = await response.json();
     if (!data.routes || data.routes.length === 0) {
       console.error("No routes found.");
       return;
     }
     const route = data.routes[0].geometry.coordinates;
+    console.log("route---"+ route);
+    console.log(data);
     setRouteData(route);
     drawRoute(route);
     setTimeout(() => drawRoute(route), 500);
@@ -166,12 +297,12 @@ const drawRoute = (route: any) => {
 };
 
 
-  const handleRouteSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (selectedRoute && destination) {
-      setShowMap(true);
-    }
-  };
+  // const handleRouteSubmit = (e: React.FormEvent) => {
+  //   e.preventDefault();
+  //   if (selectedRoute && destination) {
+  //     setShowMap(true);
+  //   }
+  // };
 
   return (
     <div className="space-y-8">
@@ -244,7 +375,7 @@ const drawRoute = (route: any) => {
               }}
             />
             {suggestions.length > 0 && (
-              <ul className="absolute w-full bg-black border border-gray-300 rounded-md shadow-lg z-10">
+              <ul className="absolute w-full max-h-60 overflow-y-auto bg-black border border-gray-300 rounded-md shadow-lg z-30">
                 {suggestions.map((suggestion, index) => (
                   <li
                     key={index}
