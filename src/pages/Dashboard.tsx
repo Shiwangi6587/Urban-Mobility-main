@@ -1,10 +1,9 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import React, { useEffect ,useState } from 'react';
+import { useEffect ,useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { Activity, Users, AlertTriangle, Clock, TrendingUp, Zap, Leaf, Timer, Fuel, MapPin } from 'lucide-react';
-import { set } from 'mongoose';
+import { Activity, Users, AlertTriangle, Zap, Leaf, Timer, Fuel } from 'lucide-react';
 
 const data = [
   { name: 'Mon', optimization: 65, emergency: 12 },
@@ -86,20 +85,16 @@ declare global {
 
 
 export default function Dashboard() {
-  const [selectedRoute, setSelectedRoute] = useState('');       // e
-  const [showMap, setShowMap] = useState(false);      // e
+  const [selectedRoute, setSelectedRoute] = useState('');
+  // const [showMap, setShowMap] = useState(false);
   const [currentLocation, setCurrentLocation] = useState<string>("Fetching...");
   const [destination, setDestination] = useState<string>("");
-  const [suggestions, setSuggestions] = useState<string[]>([]);
+  // const [suggestions, setSuggestions] = useState<string[]>([]);
   const [location, setLocation] = useState<{lat: number; lng: number} | null>(null);
-
-  // const [map, setMap] = useState<any>(null);
-  const [routeData, setRouteData] = useState<any>(null);
-  const apiKey = "21aec3f8c1f1cf282554c5d96095864e";
-
   const [map, setMap] = useState<any>(null);
-  const [marker, setMarker] = useState<any>(null);
-  const mapplsApiKey = "b7036904-69e0-4d7c-b830-f7c6df373e58"; // Replace with your API key
+  const [currentMarker, setCurrentMarker] = useState<any>(null);
+  const [destinationMarker, setDestinationMarker] = useState<any>(null);
+  const mapplsApiKey = "b7036904-69e0-4d7c-b830-f7c6df373e58";
 
 
   useEffect(() => {
@@ -137,38 +132,15 @@ console.log("lat---"+ location?.lat);
 console.log("lng---"+ location?.lng);
 
 
-  // Update marker position when location changes
-  useEffect(() => {
-    if (map && marker && location) {
-      // Remove existing marker
-      marker.remove();
-      
-      // Create new marker at updated position
-      const newMarker = new window.MapmyIndia.Marker({
-        map: map,
-        position: { lat: location.lat, lng: location.lng },
-        draggable: false,
-        fitbounds: true
-      });
-      
-      // Update marker state
-      setMarker(newMarker);
-      
-      // Center map on new position
-      map.setView([location.lat, location.lng], 12);
-    }
-  }, [location, map]);
-
-  // Initialize map with proper position handling
-  useEffect(() => {
+   // Initialize map and handle current location
+   useEffect(() => {
     let mapInstance: any;
     
-    function initializeMap() {
+    const initializeMap = () => {
       if (window.MapmyIndia && !map) {
-        // Initialize map with default or current location
         const initialPosition = location 
           ? [location.lat, location.lng]
-          : [28.544, 77.5454]; // Default position if location not available
+          : [28.544, 77.5454];
 
         mapInstance = new window.MapmyIndia.Map('map', {
           center: initialPosition,
@@ -177,34 +149,63 @@ console.log("lng---"+ location?.lng);
           hybrid: false
         });
 
-        mapInstance.addListener('load', () => {
-          // Only add marker if we have location data
-          if (location) {
-            const initialMarker = new window.MapmyIndia.Marker({
-              map: mapInstance,
-              position: { lat: location.lat, lng: location.lng },
-              draggable: false,
-              fitbounds: true
-            });
-            setMarker(initialMarker);
-          }
-        });
+        // Initialize search plugin
+        const optional_config = {
+          location: initialPosition,
+          pod: 'city',
+          bridge: true,
+          tokenizeAddress: true,
+          filter: ''
+        };
+
+        new window.MapmyIndia.search(
+          document.getElementById("destination-input"),
+          optional_config,
+          searchCallback
+        );
 
         setMap(mapInstance);
       }
-    }
+    };
 
-    // Check if the script is already loaded
+    // Load MapMyIndia scripts
+    const loadMapScript = () => {
+      const mapScript = document.createElement('script');
+      mapScript.src = `https://apis.mappls.com/advancedmaps/api/${mapplsApiKey}/map_sdk?layer=vector&v=2.0`;
+
+
+      
+      mapScript.onload = () => {
+        const pluginScript = document.createElement('script');
+        pluginScript.src = `https://apis.mappls.com/advancedmaps/api/${mapplsApiKey}/map_sdk_plugins`;
+        pluginScript.async = true;
+        pluginScript.onload = initializeMap;
+        document.head.appendChild(pluginScript);
+      };
+      
+      document.head.appendChild(mapScript);
+    };
+
     if (window.MapmyIndia) {
       initializeMap();
     } else {
-      // Load the MapMyIndia script
-      const script = document.createElement('script');
-      script.src = `https://apis.mappls.com/advancedmaps/api/${mapplsApiKey}/map_sdk?layer=vector&v=2.0`;
-      script.async = true;
-      script.defer = true;
-      script.onload = initializeMap;
-      document.head.appendChild(script);
+      loadMapScript();
+    }
+
+    // Get current location
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          setCurrentLocation(`${latitude}, ${longitude}`);
+          setLocation({ lat: latitude, lng: longitude });
+        },
+        (error) => {
+          console.error("Error fetching location:", error);
+          setCurrentLocation("Location error: " + error.message);
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
     }
 
     return () => {
@@ -212,97 +213,62 @@ console.log("lng---"+ location?.lng);
         mapInstance.remove();
       }
     };
-  }, [location]); // Add location as dependency
+  }, []);
 
-  // Update marker when current location changes
-  // useEffect(() => {
-  //   if (map && currentLocation !== "Fetching..." && currentLocation !== "Location access denied") {
-  //     const [lat, lng] = currentLocation.split(',').map(Number);
-      
-  //     // Remove existing marker if any
-  //     if (marker) {
-  //       marker.remove();
-  //     }
+  // Update current location marker
+  useEffect(() => {
+    if (map && location) {
+      // Remove existing current location marker
+      if (currentMarker) {
+        currentMarker.remove();
+      }
 
-  //     // Add new marker
-  //     const newMarker = new window.MapmyIndia.Marker({
-  //       map: map,
-  //       position: { lat, lng },
-  //       draggable: false,
-  //       title: "Current Location"
-  //     });
+      // Add new current location marker
+      const newMarker = new window.MapmyIndia.Marker({
+        map: map,
+        position: { lat: location.lat, lng: location.lng },
+        draggable: false,
+        popup: "Current Location"
+      });
 
-  //     setMarker(newMarker);
-  //     map.setCenter([lat, lng]);
-  //   }
-  // }, [currentLocation, map]);
-
-
-
-
-const fetchAddressSuggestions = async (query: string) => {
-  if (!query.trim()) {
-    setSuggestions([]);
-    return;
-  }
-
-  try {
-    const response = await fetch(
-      `https://nominatim.openstreetmap.org/search?format=json&countrycodes=IN&q=${encodeURIComponent(query)}`
-    );
-    const data = await response.json();
-    console.log(data);
-    if (Array.isArray(data) && data.length > 0) {
-      setSuggestions(data.map((item: any) => item.display_name));
-    } else {
-      setSuggestions([]);
+      setCurrentMarker(newMarker);
+      map.setView([location.lat, location.lng], 12);
     }
-  } catch (error) {
-    console.error("Error fetching address suggestions:", error);
-    setSuggestions([]);
-  }
-};
+  }, [location, map]);
 
-console.log("suggestions---"+ suggestions);
+  // Search callback for destination
+  const searchCallback = (data: any) => {
+    if (data && data[0]) {
+      const place = data[0];
+      const placeName = `${place.placeName}, ${place.placeAddress}`;
+      setDestination(placeName);
 
-const fetchRoute = async () => {
-  const API_URL = `https://apis.mapmyindia.com/advancedmaps/v1/${apiKey}/route_adv/driving/${currentLocation};${destination}`;
-  try {
-    const response = await fetch(API_URL, {
-      mode: 'no-cors',
-    });
-    const data = await response.json();
-    if (!data.routes || data.routes.length === 0) {
-      console.error("No routes found.");
-      return;
+      // Remove existing destination marker
+      if (destinationMarker) {
+        destinationMarker.remove();
+      }
+
+      // Add new destination marker
+      if (map) {
+        const newMarker = new window.MapmyIndia.Marker({
+          map: map,
+          position: { lat: place.latitude, lng: place.longitude },
+          draggable: false,
+          popup: placeName
+        });
+
+        setDestinationMarker(newMarker);
+
+        // Fit bounds to show both markers
+        if (currentMarker) {
+          const bounds = new window.MapmyIndia.LatLngBounds();
+          bounds.extend([location!.lat, location!.lng]);
+          bounds.extend([place.latitude, place.longitude]);
+          map.fitBounds(bounds);
+        }
+      }
     }
-    const route = data.routes[0].geometry.coordinates;
-    console.log("route---"+ route);
-    console.log(data);
-    setRouteData(route);
-    drawRoute(route);
-    setTimeout(() => drawRoute(route), 500);
-  } catch (error) {
-    console.error("Error fetching route:", error);
-  }
-};
-
-
-const drawRoute = (route: any) => {
-  if (!map) return;
-
-  const latlngs = route.map(([lon, lat]: any) => [lat, lon]); // Convert to [lat, lon]
-  const polyline = window.L.polyline(latlngs, { color: "blue" }).addTo(map);
-  map.fitBounds(polyline.getBounds());
-};
-
-
-  // const handleRouteSubmit = (e: React.FormEvent) => {
-  //   e.preventDefault();
-  //   if (selectedRoute && destination) {
-  //     setShowMap(true);
-  //   }
-  // };
+  };
 
   return (
     <div className="space-y-8">
@@ -318,13 +284,10 @@ const drawRoute = (route: any) => {
         <h2 className="text-3xl font-bold gradient-text mb-6">Route Planner</h2>
      
      
-        <form
-      onSubmit={(e) => {
-        e.preventDefault();
-        fetchRoute();
-      }}
-    >
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <form onSubmit={(e) => e.preventDefault()} className="space-y-6">     
+
+            {/* Route options section */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {routeOptions.map((option) => {
               const Icon = option.icon;
               return (
@@ -345,72 +308,42 @@ const drawRoute = (route: any) => {
               );
             })}
           </div>
-          
-      <div className="flex gap-4">
-        <div className="flex-1">
-          <label className="block text-xl font-medium text-gray-900 mb-2">
-            Current Location
-          </label>
-          <input
-            type="text"
-            className="input-field block w-full border-4 border-black rounded-md"
-            value={currentLocation}
-            readOnly
-          />
-        </div>
 
-        <div className="flex-1">
-          <label className="block text-xl font-medium text-gray-900 mb-2">
-            Destination
-          </label>
-          <div className="relative">
-            <input
-              type="text"
-              className="input-field block w-full border-4 border-black rounded-md"
-              placeholder="Enter destination"
-              value={destination}
-              onChange={(e) => {
-                setDestination(e.target.value);
-                fetchAddressSuggestions(e.target.value);
-              }}
-            />
-            {suggestions.length > 0 && (
-              <ul className="absolute w-full max-h-60 overflow-y-auto bg-black border border-gray-300 rounded-md shadow-lg z-30">
-                {suggestions.map((suggestion, index) => (
-                  <li
-                    key={index}
-                    className="p-2 cursor-pointer hover:bg-gray-200"
-                    onClick={() => {
-                      setDestination(suggestion);
-                      setSuggestions([]);
-                    }}
-                  >
-                    {suggestion}
-                  </li>
-                ))}
-              </ul>
-            )}
+          {/* Location inputs */}
+          <div className="flex gap-4">
+            <div className="flex-1">
+              <label className="block text-xl font-medium text-gray-900 mb-2">Current Location</label>
+              <input
+                type="text"
+                value={currentLocation}
+                className="input-field gap-5 block w-full border-4 border-black rounded-md text-black"
+                readOnly
+              />
+            </div>
+            <div className="flex-1">
+              <label className="block text-xl font-medium text-gray-900 mb-2">Destination</label>
+              <input
+                id="destination-input"
+                type="text"
+                className="input-field gap-5 block w-full border-4 border-black rounded-md"
+                placeholder="Search places..."
+                value={destination}
+                onChange={(e) => setDestination(e.target.value)}
+              />
+            </div>
+            <button
+              type="submit"
+              className="self-end px-6 py-2.5 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-lg hover:from-indigo-600 hover:to-purple-600 transition-all duration-300 disabled:opacity-50 shadow-lg shadow-indigo-500/20"
+              disabled={!selectedRoute || !destination}
+            >
+              Find Route
+            </button>
           </div>
-        </div>
+        </form>
 
-        <button
-          type="submit"
-          className="self-end px-6 py-2.5 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-lg hover:from-indigo-600 hover:to-purple-600 transition-all duration-300 disabled:opacity-50 shadow-lg shadow-indigo-500/20"
-          disabled={!destination}
-        >
-          Find Route
-        </button>
+        <div id="map" className="w-full h-[500px] mt-5 border-2 border-gray-500 rounded-md"></div>
       </div>
-
-      <div id="map" className="w-full h-[500px] mt-5 border-2 border-gray-500 rounded-md"></div>
-    </form>
           
-          
-                
-      
-
-   
-      </div>
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {stats.map((stat) => {
