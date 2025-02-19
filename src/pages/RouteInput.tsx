@@ -2,9 +2,9 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Car, Bike, Truck, Clock, Leaf, Shield } from "lucide-react";
+import { Car, Bike, Truck, Clock, Leaf, Shield, Route } from "lucide-react";
 // import { Map, MapplsGL } from "@mappls/mappls-web-maps";
-import axios from "axios";
+// import axios from "axios";
 
 
 // Add type declaration for window.mappls
@@ -345,7 +345,7 @@ const RouteInput = () => {
   }, [sourceLocation, destLocation]);
 
 
-  
+  // ------------ Main route function ----------------
   // Fetch optimized route
   const directionPluginRef = useRef<any>(null);
 
@@ -420,7 +420,7 @@ const RouteInput = () => {
           // Create new direction plugin
           window.mappls.direction(directionOptions, function(data: any) {
             directionPluginRef.current = data;
-            console.log("Direction plugin initialized:", data);
+            console.log("Direction plugin initialized:", data?.data);
           });
         }
       } catch (error) {
@@ -490,7 +490,7 @@ const RouteInput = () => {
                 {sourceSuggestions.map((suggestion: LocationSuggestion) => (
                   <div
                     key={suggestion.place_id}
-                    className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                    className="px-4 py-2 hover:bg-gray-100 hover:text-black cursor-pointer"
                     onClick={() => {
                       setSourceQuery(suggestion.display_name);
                       setSourceLocation({
@@ -624,7 +624,50 @@ const RouteInput = () => {
         {/*    start={sourceLocation ? { lat: parseFloat(sourceLocation.lat), lng: parseFloat(sourceLocation.lon) } : null}*/}
         {/*    destination={destLocation ? { lat: parseFloat(destLocation.lat), lng: parseFloat(destLocation.lon) } : null}*/}
         {/*/>*/}
-        <div id="map" style={{ width: "100%", height: "500px" }}></div>
+        <div className="flex flex-row w-full gap-4"> 
+          <div id="map" style={{ width: "70%", height: "500px" }}></div>
+          {sourceLocation && destLocation && 
+          (<div className="w-[30%] p-4 bg-white rounded-lg shadow overflow-auto">
+            <h2 className="text-xl font-semibold mb-4 text-gray-900">Available Routes</h2>
+            {directionPluginRef.current?.data ? (
+              <div className="space-y-4">
+                {Array.from({ length: directionPluginRef.current.data.length }, (_, i) => (
+                  <div 
+                    key={i}
+                    className="p-4 border border-gray-200 rounded-lg hover:border-blue-500 cursor-pointer transition-colors"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-medium text-gray-900">Route {i + 1}</span>
+                      <span className="text-sm text-gray-500">
+                        {directionPluginRef.current.data[i].routeName || `Route ${i + 1}`}
+                      </span>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="flex items-center space-x-2">
+                        <Route className="w-4 h-4 text-gray-600" />
+                        <span className="text-gray-900">
+                          {directionPluginRef.current.data[i].distance}
+                        </span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Clock className="w-4 h-4 text-gray-600" />
+                        <span className="text-gray-900">
+                          {directionPluginRef.current.data[i].eta}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-gray-500 text-center">
+                Enter source and destination to see available routes
+              </div>
+            )}
+          </div>
+          )}
+        </div>
       </form>
     </div>
   );
