@@ -1,13 +1,10 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import React, { useEffect, useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { Activity, Users, AlertTriangle, Clock, TrendingUp, Zap, Leaf, Timer, Fuel, MapPin } from 'lucide-react';
-import { set } from 'mongoose';
-import MapComponent from './MapComponent';
 import RouteInput from './RouteInput';
-
-
-
 
 const data = [
   { name: 'Mon', optimization: 65, emergency: 12 },
@@ -54,10 +51,6 @@ const stats = [
   },
 ];
 
-
-
-
-
 const routeOptions = [
   {
     id: 'eco',
@@ -83,7 +76,6 @@ const routeOptions = [
   }
 ];
 
-
 declare global {
   interface Window {
     MapmyIndia: any;
@@ -91,28 +83,24 @@ declare global {
   }
 }
 
-
 export default function Dashboard() {
-  const [selectedRoute, setSelectedRoute] = useState('');       // e
-  const [showMap, setShowMap] = useState(false);      // e
+  const [selectedRoute, setSelectedRoute] = useState('');       
+  const [showMap, setShowMap] = useState(false);      
   const [currentLocation, setCurrentLocation] = useState<string>("Fetching...");
   const [destination, setDestination] = useState<string>("");
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
-
-  // const [map, setMap] = useState<any>(null);
   const [routeData, setRouteData] = useState<any>(null);
-
   const [map, setMap] = useState<any>(null);
   const [marker, setMarker] = useState<any>(null);
   const mapplsApiKey = "b7036904-69e0-4d7c-b830-f7c6df373e58"; // Replace with your API key
+
   interface NominatimResponse {
     display_name: string;
     error?: string;
   }
 
   const fetchAddress = async (latitude: number, longitude: number): Promise<void> => {
-    // Input validation
     if (!isValidCoordinate(latitude, longitude)) {
       setCurrentLocation("Invalid coordinates provided.");
       return;
@@ -125,13 +113,11 @@ export default function Dashboard() {
           format: 'json',
           lat: latitude.toString(),
           lon: longitude.toString(),
-          // Recommended by Nominatim guidelines
           'accept-language': 'en',
           zoom: '18'
         }),
         {
           headers: {
-            // Required by Nominatim usage policy
             'User-Agent': 'YourAppName/1.0',
           }
         }
@@ -159,7 +145,6 @@ export default function Dashboard() {
     }
   };
 
-  // Helper function to validate coordinates
   const isValidCoordinate = (lat: number, lon: number): boolean => {
     return (
       !isNaN(lat) &&
@@ -170,14 +155,13 @@ export default function Dashboard() {
       lon <= 180
     );
   };
+
   useEffect(() => {
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const { latitude, longitude } = position.coords;
         console.log("Location fetched:", latitude, longitude);
         setLocation({ lat: latitude, lng: longitude });
-
-        // Fetch and update the address
         fetchAddress(latitude, longitude);
       },
       (error) => {
@@ -188,18 +172,10 @@ export default function Dashboard() {
     );
   }, []);
 
-
-
-  console.log("lat---" + location?.lat);
-  console.log("lng---" + location?.lng);
-
-  // Update marker position when location changes
   useEffect(() => {
     if (map && location) {
-      // Remove existing marker
       if (marker) marker.remove();
 
-      // Create new marker at updated position
       const newMarker = new window.MapmyIndia.Marker({
         map: map,
         position: { lat: location.lat, lng: location.lng },
@@ -210,16 +186,13 @@ export default function Dashboard() {
       setMarker(newMarker);
       map.setView([location.lat, location.lng], 12);
     }
-  }, [location, map]); // Re-run whenever location or map changes
+  }, [location, map]);
 
-
-  // Initialize map with proper position handling
   useEffect(() => {
     let mapInstance: any;
 
     function initializeMap() {
       if (window.MapmyIndia && !map) {
-        // Initialize map with default or current location
         const initialPosition = location
           ? [location.lat, location.lng]
           : [28.544, 77.5454]; // Default position if location not available
@@ -232,7 +205,6 @@ export default function Dashboard() {
         });
 
         mapInstance.addListener('load', () => {
-          // Only add marker if we have location data
           if (location) {
             const initialMarker = new window.MapmyIndia.Marker({
               map: mapInstance,
@@ -248,11 +220,9 @@ export default function Dashboard() {
       }
     }
 
-    // Check if the script is already loaded
     if (window.MapmyIndia) {
       initializeMap();
     } else {
-      // Load the MapMyIndia script
       const script = document.createElement('script');
       script.src = `https://apis.mappls.com/advancedmaps/api/${mapplsApiKey}/map_sdk?layer=vector&v=2.0`;
       script.async = true;
@@ -266,7 +236,7 @@ export default function Dashboard() {
         mapInstance.remove();
       }
     };
-  }, [location]); // Add location as dependency
+  }, [location]);
 
   const fetchAddressSuggestions = async (query: string) => {
     if (!query.trim()) {
@@ -291,10 +261,8 @@ export default function Dashboard() {
     }
   };
 
-  console.log("suggestions---" + suggestions);
-
   const fetchRoute = async () => {
-    const API_URL = `https://apis.mapmyindia.com/advancedmaps/v1/${apiKey}/route_adv/driving/${currentLocation};${destination}`;
+    const API_URL = `https://apis.mapmyindia.com/advancedmaps/v1/${mapplsApiKey}/route_adv/driving/${currentLocation};${destination}`;
     try {
       const response = await fetch(API_URL, {
         mode: 'no-cors',
@@ -339,12 +307,10 @@ export default function Dashboard() {
         <h2 className="text-4xl font-bold text-purple-500 mb-6 font-serif text-center">
           Route Planner
         </h2>
-        {/* White underline */}
         <div className="w-full border-b-2 border-purple-400 mb-6"></div>
 
         <RouteInput />
       </div>
-
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {stats.map((stat) => {
@@ -360,8 +326,7 @@ export default function Dashboard() {
                   <Icon className={`w-6 h-6 ${stat.iconColor}`} />
                 </div>
               </div>
-              <p className={`text-sm mt-2 font-medium ${stat.change.startsWith('+') ? 'text-emerald-400' : 'text-rose-400'
-                }`}>
+              <p className={`text-sm mt-2 font-medium ${stat.change.startsWith('+') ? 'text-emerald-400' : 'text-rose-400'}`}>
                 {stat.change} from last week
               </p>
             </div>
