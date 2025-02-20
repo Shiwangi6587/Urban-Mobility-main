@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Car, Bike, Truck, Clock, Leaf, Shield, Ship, Wallet, Trees, Footprints ,Route , Navigation} from "lucide-react";
+import { Car, Bike, Truck, Clock, Leaf, Shield, Ship, Wallet, Trees, Footprints, Route, Navigation } from "lucide-react";
 import axios from "axios";
 
 // Add type declaration for window.mappls
@@ -47,7 +47,7 @@ const VehicleOption = ({
     onClick={onClick}
     className={`
       flex flex-col items-center justify-center p-4 rounded-xl transition-all duration-200
-      ${selected 
+      ${selected
         ? 'bg-gradient-to-br from-gray-100 to-white shadow-inner border-none'
         : 'bg-gradient-to-tl from-gray-100 to-white shadow-lg hover:shadow-xl'
       }
@@ -57,11 +57,11 @@ const VehicleOption = ({
       }
     `}
   >
-      <div className={`
+    <div className={`
       mb-2 transform transition-transform duration-200
       ${selected ? 'scale-90 text-purple-600' : 'scale-100 text-gray-600'}
     `}>
-    {icon}
+      {icon}
     </div>
     {/* <span className="mt-2 text-sm font-medium">{label}</span> */}
     <span className={`
@@ -74,15 +74,15 @@ const VehicleOption = ({
   </button>
 );
 //  ----this is for location input css ---------
-const LocationInput = ({ 
-  label, 
-  value, 
-  onChange, 
-  placeholder, 
-  onLocationClick, 
+const LocationInput = ({
+  label,
+  value,
+  onChange,
+  placeholder,
+  onLocationClick,
   showLocationButton,
   suggestions,
-  onSuggestionSelect 
+  onSuggestionSelect
 }) => (
   <div className="relative">
     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -107,7 +107,7 @@ const LocationInput = ({
         </button>
       )}
     </div>
-    
+
     {/* Suggestions Dropdown */}
     {suggestions && suggestions.length > 0 && (
       <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
@@ -233,15 +233,15 @@ const RouteInput = () => {
       mapRef.current.remove();
       mapRef.current = null;
     }
-  
+
     let center: { lat: number; lng: number } = { lat: 28.6139, lng: 77.209 }; // Default center
-  
+
     if (startLoc) {
       center = startLoc;
     } else if (destinationLoc) {
       center = destinationLoc;
     }
-  
+
     const mapInstance = new window.MapmyIndia.Map("map", {
       center: center,
       zoom: 12,
@@ -249,7 +249,7 @@ const RouteInput = () => {
       hybrid: false,
     });
     mapRef.current = mapInstance;
-  
+
     if (startLoc) {
       const newStartMarker = new window.MapmyIndia.Marker({
         map: mapInstance,
@@ -258,7 +258,7 @@ const RouteInput = () => {
       });
       startMarkerRef.current = newStartMarker;
     }
-  
+
     if (destinationLoc) {
       const newDestinationMarker = new window.MapmyIndia.Marker({
         map: mapInstance,
@@ -307,15 +307,15 @@ const RouteInput = () => {
     if (window.MapmyIndia && (sourceLocation || destLocation)) {
       const startLoc = sourceLocation
         ? {
-            lat: parseFloat(sourceLocation.lat),
-            lng: parseFloat(sourceLocation.lon),
-          }
+          lat: parseFloat(sourceLocation.lat),
+          lng: parseFloat(sourceLocation.lon),
+        }
         : null;
       const destinationLoc = destLocation
         ? {
-            lat: parseFloat(destLocation.lat),
-            lng: parseFloat(destLocation.lon),
-          }
+          lat: parseFloat(destLocation.lat),
+          lng: parseFloat(destLocation.lon),
+        }
         : null;
       initializeMap(startLoc, destinationLoc);
     } else if (!window.MapmyIndia) {
@@ -326,15 +326,15 @@ const RouteInput = () => {
       script.onload = () => {
         const startLoc = sourceLocation
           ? {
-              lat: parseFloat(sourceLocation.lat),
-              lng: parseFloat(sourceLocation.lon),
-            }
+            lat: parseFloat(sourceLocation.lat),
+            lng: parseFloat(sourceLocation.lon),
+          }
           : null;
         const destinationLoc = destLocation
           ? {
-              lat: parseFloat(destLocation.lat),
-              lng: parseFloat(destLocation.lon),
-            }
+            lat: parseFloat(destLocation.lat),
+            lng: parseFloat(destLocation.lon),
+          }
           : null;
         initializeMap(startLoc, destinationLoc);
       };
@@ -391,15 +391,15 @@ const RouteInput = () => {
       }
 
 
-       const profileMap: Record<string, string> = {
-            car: "driving",
-            bike: "biking",
-            truck: "trucking",
-            walking: "walking",
-          };
-      
-          const selectedProfile = profileMap[vehicleType] || "driving"; // Default to driving
-      
+      const profileMap: Record<string, string> = {
+        car: "driving",
+        bike: "biking",
+        truck: "trucking",
+        walking: "walking",
+      };
+
+      const selectedProfile = profileMap[vehicleType] || "driving"; // Default to driving
+
 
       // Initialize direction plugin
       if (mapRef.current && sourceLocation && destLocation) {
@@ -411,7 +411,7 @@ const RouteInput = () => {
           // Profile:['driving','biking','trucking','walking'],
 
 
-          Profile: selectedProfile,  
+          Profile: selectedProfile,
 
           routeLineColor: "black",
           start: {
@@ -442,13 +442,18 @@ const RouteInput = () => {
   // ---------this will ensure that after click on button it give route
   useEffect(() => {
     if (routeRequested) {
+      if (!activeVehicle) {
+        alert("Please select an active vehicle.");
+        setRouteRequested(false);
+        return;
+      }
       fetchRoute();
       setRouteRequested(false); // Reset after fetching the route
     }
   }, [routeRequested]); // Trigger fetch only when button is clicked
 
   const activeVehicle = getActiveVehicle();
-  
+
   // ---------------------- Return the main UI here ----------------------
   return (
     <div className="w-full px-4 py-8">
@@ -462,7 +467,7 @@ const RouteInput = () => {
               htmlFor="source"
               className="block text-sm font-medium text-gray-700"
             >
-              Starting Point 
+              Starting Point
             </label>
 
             {/* this is for input current suggestion  */}
@@ -483,7 +488,7 @@ const RouteInput = () => {
                 onClick={fetchCurrentLocation}
                 className="ml-2 px-3 py-2 bg-blue-500 text-white rounded-md shadow-sm hover:bg-blue-600"
               >
-                📍 Use Current Location 
+                📍 Use Current Location
               </button>
             </div>
 
@@ -601,12 +606,12 @@ const RouteInput = () => {
                 setVehicleType("walking");
                 fetchRoute();  // Update map profile on selection change
               }}
-            /> 
+            />
           </div>
         </div>
 
         {/* -------------------------- Submit Button ---------------------------- */}
-        {/* <button
+        <button
           type="submit"
           onClick={(e) => {
             e.preventDefault();
@@ -618,39 +623,16 @@ const RouteInput = () => {
           }}
           className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
         >
+          {/* Get Route  */}
           <Navigation size={20} />
           <span>Get Route</span>
-        </button> */}
+        </button>
 
-
-<button
-  type="submit"
-  onClick={(e) => {
-    e.preventDefault();
-    if (!sourceLocation || !destLocation) {
-      alert("Please select both a starting point and destination!");
-      return;
-    }
-
-    setRouteRequested(true);  // Update state
-
-    setTimeout(() => {
-      fetchRoute(); // Ensure fetchRoute runs immediately
-    }, 0);
-  }}
-  className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
->
-  <Navigation size={20} />
-  <span>Get Route</span>
-</button>
-
-
-        <div className="flex flex-row w-full gap-4"> 
+        <div className="flex flex-row w-full gap-4">
           <div id="map" style={{ width: "70%", height: "500px" }}></div>
-          {sourceLocation && destLocation && 
-          (<div className="w-[30%] p-4 bg-white rounded-lg shadow overflow-auto">
-            <h2 className="text-xl font-semibold mb-4 text-gray-900">Available Routes</h2>
-            {directionPluginRef.current?.data ? (
+          {activeVehicle && directionPluginRef.current?.data ? (
+            <div className="w-[30%] p-4 bg-white rounded-lg shadow overflow-auto">
+              <h2 className="text-xl font-semibold mb-4 text-gray-900">Available Routes</h2>
               <div className="space-y-4">
                 {Array.from({ length: directionPluginRef.current.data.length }, (_, i) => {
                   const distance = parseFloat(directionPluginRef.current.data[i].distance); // Distance in km
@@ -669,7 +651,7 @@ const RouteInput = () => {
                     : 'N/A'; // Default to Petrol if fuel type is unknown
 
                   return (
-                    <div 
+                    <div
                       key={i}
                       className="p-4 border border-gray-900 rounded-lg hover:border-blue-500 cursor-pointer transition-colors"
                     >
@@ -686,16 +668,12 @@ const RouteInput = () => {
                             {distance} km
                           </span>
                         </div>
-                    
-
-
-<div className="flex items-center space-x-2">
-  <Clock className="w-4 h-4 text-gray-900" />
-  <span className="text-gray-900">
-  {directionPluginRef.current.data[i].eta.replace(/<[^>]*>/g, "")}
-  </span>
-</div>
-                     
+                        <div className="flex items-center space-x-2">
+                          <Clock className="w-4 h-4 text-gray-900" />
+                          <span className="text-gray-900">
+                            {directionPluginRef.current.data[i].eta.replace(/<[^>]*>/g, "")}
+                          </span>
+                        </div>
                         <div className="flex items-center space-x-2 col-span-2">
                           <Leaf className="w-4 h-4 text-green-600" />
                           <span className="text-gray-900">
@@ -707,12 +685,11 @@ const RouteInput = () => {
                   );
                 })}
               </div>
-            ) : (
-              <div className="text-gray-900 text-center">
-                Enter source and destination to see available routes
-              </div>
-            )}
-          </div>
+            </div>
+          ) : (
+            <div className="text-gray-900 text-center">
+              Enter source and destination to see available routes
+            </div>
           )}
         </div>
       </form>
