@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Car, Bike, Truck, Clock, Leaf, Shield, Ship, Wallet, Trees, Footprints ,Route , Navigation} from "lucide-react";
+import { Car, Bike, Truck, Clock, Leaf, Shield, Ship, Wallet, Trees, Footprints, Route, Navigation, MapPin } from "lucide-react";
 import axios from "axios";
 
 // Add type declaration for window.mappls
@@ -29,6 +29,17 @@ interface LocationSuggestion {
   lat: string;
   lon: string;
   display_name: string;
+}
+
+interface LocationInputProps {
+  label: string;
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  placeholder: string;
+  onLocationClick: () => void;
+  showLocationButton: boolean;
+  suggestions: LocationSuggestion[];
+  onSuggestionSelect: (suggestion: LocationSuggestion) => void;
 }
 
 const VehicleOption = ({
@@ -83,7 +94,7 @@ const LocationInput = ({
   showLocationButton,
   suggestions,
   onSuggestionSelect 
-}) => (
+}: LocationInputProps) => (
   <div className="relative">
     <label className="block text-sm font-medium text-gray-700 mb-1">
       {label}
@@ -124,8 +135,6 @@ const LocationInput = ({
     )}
   </div>
 );
-
-
 
 // -------------- Main Component starts here --------------
 const RouteInput = () => {
@@ -452,15 +461,13 @@ const RouteInput = () => {
   // ---------------------- Return the main UI here ----------------------
   return (
     <div className="w-full px-4 py-8">
-      <h1 className="text-3xl font-bold text-gray-900 mb-8">Plan Your Route</h1>
-
       <form className="space-y-6">
         {/* Location Inputs */}
         <div className="space-y-4">
           <div className="relative">
             <label
               htmlFor="source"
-              className="block text-sm font-medium text-gray-700"
+              className="block text-xl  font-bold text-gray-700"
             >
               Starting Point 
             </label>
@@ -475,13 +482,13 @@ const RouteInput = () => {
                   setSourceQuery(e.target.value);
                   setSourceLocation(null);
                 }}
-                className="mt-1 block w-full rounded-md border-gray-900 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-pink-900"
+                className="mt-4 p-5 block w-full rounded-md border-gray-900 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-black"
                 placeholder="Enter starting location "
               />
               <button
                 type="button"
                 onClick={fetchCurrentLocation}
-                className="ml-2 px-3 py-2 bg-blue-500 text-white rounded-md shadow-sm hover:bg-blue-600"
+                className="font-medium text-sm bg-blue-500 text-white rounded-md shadow-sm hover:bg-blue-600"
               >
                 📍 Use Current Location 
               </button>
@@ -493,7 +500,7 @@ const RouteInput = () => {
                 {sourceSuggestions.map((suggestion) => (
                   <div
                     key={suggestion.place_id}
-                    className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                    className="px-4 py-2 hover:bg-gray-900 cursor-pointer"
                     onClick={() => {
                       setSourceQuery(suggestion.display_name);
                       setSourceLocation({
@@ -515,7 +522,7 @@ const RouteInput = () => {
           <div className="relative">
             <label
               htmlFor="destination"
-              className="block text-sm font-medium text-gray-700"
+              className="block text-xl  mt-5  font-bold text-gray-700"
             >
               Destination
             </label>
@@ -527,7 +534,7 @@ const RouteInput = () => {
                 setDestQuery(e.target.value);
                 setDestLocation(null);
               }}
-              className="mt-1 block w-full rounded-md border-gray-900 shadow-sm focus:border-blue-900 focus:ring-blue-500 text-pink-900"
+              className="mt-4 p-5 block w-full rounded-md border-gray-900 shadow-sm focus:border-blue-900 focus:ring-blue-500 text-black"
               placeholder="Enter destination"
             />
 
@@ -561,7 +568,7 @@ const RouteInput = () => {
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Vehicle Type
           </label>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-4 gap-4">
             <VehicleOption
               icon={<Car className="h-6 w-6 " />}
               label="Car"
