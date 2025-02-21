@@ -93,7 +93,7 @@ export default function Dashboard() {
   const [routeData, setRouteData] = useState<any>(null);
   const [map, setMap] = useState<any>(null);
   const [marker, setMarker] = useState<any>(null);
-  const mapplsApiKey = "b7036904-69e0-4d7c-b830-f7c6df373e58"; // Replace with your API key
+  const mapplsApiKey = "bd0be172-d751-4d73-a6ca-8790000798d5"; // Replace with your API key
 
   interface NominatimResponse {
     display_name: string;
